@@ -2,6 +2,8 @@ boolean SetupButtonCheck(byte);
 int getCurrentTime();
 
 void moveTap(Motor, long);
+int calculateMotorDirection(bool actionToDo, Motor motor);
+int checkPositionOfMotor(Motor motor);
 void openTap(Motor);
 void closeTap(Motor);
 

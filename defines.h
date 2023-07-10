@@ -13,7 +13,8 @@ const float GEAR_RED = 64;   //  Amount of Gear Reduction
  
 const float STEPS_PER_OUT_REV = STEPS_PER_REV * GEAR_RED;   // Number of steps per geared output rotation
 
-#define quantity_of_zones 3
+#define QUANTITY_OF_ZONES 3
+#define QUANTITY_OF_MOTORS 5
 
 
 #define TIME_BACKLASH 3
@@ -71,10 +72,10 @@ const float STEPS_PER_OUT_REV = STEPS_PER_REV * GEAR_RED;   // Number of steps p
 #define Poten_pin A4       // A6
 #define Dat_humidity A7     // A7
 #define battery_signal A5     // --
-#define setButton_pin 8   // D2
+#define setButton_pin 3   // D2 -- switched from D8 to D2 (after motors upgrade)
 #define backButton_pin 9  // --
 #define woter_pin_1 6    // UP  (A3)
-#define woter_pin_2 7    // DOWN (7)
+#define woter_pin_2 2    // DOWN (7) -- switched from D7 to D2 (after motors upgrade)
 #define rele_pin 5 // --
 #define battery_rele 12 // --
 #define reset_rele 11 // --
@@ -109,16 +110,17 @@ const float STEPS_PER_OUT_REV = STEPS_PER_REV * GEAR_RED;   // Number of steps p
 #define millis_days_cell 152    // --
 #define start_log_array_cell 160    
 
+#define CLOSE false
+#define OPEN true
 
 tmElements_t t;
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 GButton setButton(setButton_pin);
 GButton backButton(backButton_pin);
 
-int time_pause_before_watering = 10; // через скільки хв перед поливом закрить кран на набор води в бак
-int dovShuna_Nabora_vodu = 300;   // скільки вода після отк крана зможе набираться в бак у минутах
-boolean Open_Rele_signal = 1;    // якщо реле низького уровня = 0, а якщо високого то = 1
-
+int time_pause_before_watering = 10; // after how many minutes before watering, close the tap to add water to the tank
+int dovShuna_Nabora_vodu = 300;   // how much water can be collected in the tank in minutes after opening the tap
+boolean Open_Rele_signal = 1;    // if low level relay = 0, and if high level then = 1
 boolean SETUP = 0;
 byte logList[size_of_log_list][4];   // array for the log of all actions
 byte millis_days = 0;                // counting days since launch, which is necessary for the array of logs
@@ -134,6 +136,8 @@ byte current_month = 0;
 byte current_year = 0;
 byte last_millis_check = 0;
 
+byte tank_status = 0;
+byte last_tank_status = 0;
 
 //////
   

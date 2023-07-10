@@ -1,7 +1,6 @@
 #include "work_help_functions.h"
 
-byte tank_status = 0;
-byte last_tank_status = 0;
+
 
 void workCircle (){
   
@@ -14,8 +13,8 @@ void workCircle (){
   //  Serial.println(t.Second);
 
 
-//Получение текущего времени:
-    int currentTime = t.Hour*60 + t.Minute;//в минутах
+//Get current time:
+    int currentTime = t.Hour*60 + t.Minute;
     if(t.Day != last_day1){ millis_days++; last_day1 = t.Day;}
     #ifdef DEBUGPRINTS
     Serial.print("---current time--- ");
@@ -74,7 +73,8 @@ void workCircle (){
     Serial.print("duration > ");
     Serial.println(zone3.duration);
     #endif
-//Обновление статуса бака:
+    
+//Updating tank status:
 if(isTankFull()){
     tank_status = 2;
     if(last_tank_status != 2){
@@ -105,7 +105,7 @@ if(isTankFull()){
     if(SetupButtonCheck() == 1) return;
 }
 
-//Проверка зон:
+//Check zones:
   if(tank_status != 0 && isInFillingTankProcess == false){
     #ifdef DEBUGPRINTS
     Serial.println("check zone"); 
@@ -118,10 +118,10 @@ if(isTankFull()){
   if((zone1.isEndWateringTime(currentTime))&&(zone1.isInWateringProcess)) {zone1.stopWatering(); addLog(millis_days, t.Hour, t.Minute, 7);  }
   if((zone2.isEndWateringTime(currentTime))&&(zone2.isInWateringProcess)) {zone2.stopWatering(); addLog(millis_days, t.Hour, t.Minute, 8);  }
   if((zone3.isEndWateringTime(currentTime))&&(zone3.isInWateringProcess)) {zone3.stopWatering(); addLog(millis_days, t.Hour, t.Minute, 9);  }
-//Проверка бака:
+// Tank check:
   if(isInFillingTankProcess == true){
     #ifdef DEBUGPRINTS 
-    Serial.println("poputka zackrutb back 1"); 
+    Serial.println("attempt to close tank 1"); 
     #endif
     if((zone1.timeToWateringStart(currentTime)<5)
     || (zone2.timeToWateringStart(currentTime)<5)
@@ -134,7 +134,7 @@ if(isTankFull()){
   }
   if((isFillingTankTime(currentTime))&&(tank_status != 2) && isInFillingTankProcess == false){
     #ifdef DEBUGPRINTS 
-    Serial.println("poputka nabratb back 1"); 
+    Serial.println("attempt to open tank 1"); 
     #endif
     if((!zone1.isInWateringProcess)&&(!(zone1.timeToWateringStart(currentTime)<30))
     && (!zone2.isInWateringProcess)&&(!(zone2.timeToWateringStart(currentTime)<30))
@@ -145,14 +145,12 @@ if(isTankFull()){
   }
   if(tank_status == 0 && isInFillingTankProcess == false){
     #ifdef DEBUGPRINTS 
-    Serial.println("mr Back is empty. So we need a 1,5 of beer!"); 
+    Serial.println("tank is empty"); 
     #endif
     if(zone1.isInWateringProcess){zone1.stopWatering(); addLog(millis_days, t.Hour, t.Minute, 12);}
     if(zone2.isInWateringProcess){zone2.stopWatering(); addLog(millis_days, t.Hour, t.Minute, 13);}
     if(zone3.isInWateringProcess){zone3.stopWatering(); addLog(millis_days, t.Hour, t.Minute, 14);}
-    // тут можно сделать принудительный длинный сон. сделать небольшой цикл, который будет опрашивать только кнопку и датчик дождя и ждать время набора бака.
+    
     if(isFillingTankTime(currentTime)){ startFillingTank(); addLog(millis_days, t.Hour, t.Minute, 15);}
   }
-  
-  //delay(50); power.sleepDelay(60000); delay(50);//можно sleepDelay заменить на супер-дупер сон
 }

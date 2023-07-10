@@ -3,7 +3,7 @@ byte knotSet(byte stringAddress){
     #ifdef DEBUGPRINTS 
     Serial.println("knotSet"); 
     #endif
-    byte mode = 0;//пункт меню, находящийся в данный момент на экране
+    byte mode = 0; //menu item currently on the screen
     byte deepOfRecursion = numberOfDigits(userPath);
     byte quantity = mainMenuArray[stringAddress][0].toInt();
     boolean push = 0;
@@ -26,7 +26,7 @@ byte knotSet(byte stringAddress){
             }else{userPathMemory = 0;}
         /////////
         if(backButtonCheck())break;
-        if(setButton.isSingle()|| push == 1){   //если нажат "enter"
+        if(setButton.isSingle()|| push == 1){   //if "enter" is pressed
               push = 0;
               if(mainMenuArray[stringAddress][(mode*2+2)].toInt() >= 40){
                   userPath += (mode+1) * int(ceil(pow(10,(deepOfRecursion))));         
@@ -71,21 +71,28 @@ void chooseSet(long userPath, byte outValue){
         }
        break;
      case 52: 
+     Serial.print("userPath == "); 
+           Serial.println(userPath);
         switch (userPath%10){
            case 1: saveBoolSetZone(userPath);break;
+           case 2: saveBoolSetZone(userPath);break;
            case 4: saveSet(rainSensorIsTurnedOnMemory_cell);break;
+           ; 
            default: break;
         }
         break;
-     case 53: saveSet(tankModeMemory_cell);break; //булевый saveSet
+     case 53: saveSet(tankModeMemory_cell);break; // boolean saveSet
      case 54: dateSaveSet(); break;
-     case 55: saveSetZone(userPath,1,14); break;//14 - максимальное кол-во дней для паузы
+     case 55: saveSetZone(userPath,1,14); break;  //14 - maximum number of days to pause
      case 56: timeSaveSet();break;
      case 57: tankCustomTimeSet(); break;//
      case 58: handControlOfMotor(userPath); break;//
      case 59: calibrationMotor(userPath); break;//
      case 60: systemStatusShow(); break;//
      case 61: systemLogsShow(); break;
+     case 62: setMotorPosition(userPath, CLOSE); break;
+     case 63: setMotorPosition(userPath, OPEN); break;
+
   }
     #ifdef DEBUGPRINTS 
     Serial.println("choose set f"); 
@@ -101,7 +108,7 @@ int read_potent (int lowerLimit,int upperLimit){
      int value  =  analogRead(Poten_pin);
      return constrain(map(value, 0, 1024, lowerLimit, upperLimit+1),lowerLimit,upperLimit);
   }
-byte numberOfDigits(long num){//потестить
+byte numberOfDigits(long num){
     byte digits = 0;
     for(;num>0; digits++){
       num/=10;
@@ -109,7 +116,7 @@ byte numberOfDigits(long num){//потестить
     return digits;
 }
 void LCDprintResult (byte firstValue, byte secondValue, byte setCursorColumn,byte setCursorInLine){
-  // выводит результат - время
+  // outputs result - time
     lcd.clear ();
     lcd.print("save ");
     if(firstValue >=10){
@@ -142,7 +149,7 @@ void menuInitialize(byte mode, String items[]){
 }
 boolean menuUpdate(byte &mode, String items[], byte quantity){
    if(quantity > 1){;
-   if(mode!=read_potent(quantity-1)){//Если пользователь сместил потенциометр - обновляем экран
+   if(mode!=read_potent(quantity-1)){  //If the user moved the potentiometer - update the screen
        mode = read_potent(quantity-1);
        lcd.clear();
        lcd.print(items[mode*2+1]);
@@ -183,14 +190,15 @@ void printFormattedValue(byte &value,byte lowerLimit,byte upperLimit){
     printValue(value,5,1);
     }
   }
-//перегрузка printValue для булевого значения
+  
+// overload printValue for boolean value
 void printValue(bool value, byte line, byte column){
   if(backButtonCheck()){return;}
   lcd.setCursor(line,column);
   if(value==0) lcd.print("ON ");
   if(value==1) lcd.print("OFF");
 }
-//перегрузка printFormattedValue для булевого значения
+//overload printFormattedValue for boolean value
 void printFormattedValue(bool &value){
   if(backButtonCheck()){return;}
   if(value != read_potent(1)){
@@ -202,11 +210,11 @@ void printFormattedValue(bool &value){
 // Setters
 void saveSet(byte lowerLimit,byte upperLimit, byte memoryCell){
   #ifdef DEBUGPRINTS 
-  Serial.println("ss start"); 
+  Serial.println("saveSet start"); 
   #endif
-  byte value = read_potent(lowerLimit,upperLimit);//value = -1;???
+  byte value = read_potent(lowerLimit,upperLimit);
   bool savePermit = 1;
-  printValue(value,5,1);//инициализация
+  printValue(value,5,1); // initialization
   while(true){
     printFormattedValue(value,lowerLimit,upperLimit);
     if(setButton.isSingle())break;
@@ -223,9 +231,38 @@ void saveSet(byte lowerLimit,byte upperLimit, byte memoryCell){
        }
    }  
 }
-//перегрузка saveSet для булевого значения
+int boolsaveSetReturn(){
+    bool value = read_potent(1);
+    bool savePermit = 1;
+    printValue(value,5,1);
+    while(true){
+        #ifdef DEBUGPRINTS 
+        Serial.println("bool save Set return"); 
+        #endif
+        if(backButtonCheck()==1){savePermit =0;break;}
+        printFormattedValue(value);
+        if(setButton.isSingle()) break;
+    }
+    if(savePermit == 1){  
+        lcd.clear();
+        lcd.print("saved: ");
+        printValue(value,7,0);
+    //  Serial.println("save");  
+      //  EEPROM.update(memoryCell,!value);
+      return !value;
+        while(true){
+           if(backButtonCheck()==1)break;
+        }
+     }
+     return -1;
+   #ifdef DEBUGPRINTS 
+   Serial.println("bool save Set return final"); 
+   #endif
+}
+
+// saveSet overload for boolean value
 void saveSet(byte memoryCell){
-    bool value = read_potent(1);//value = -1;???
+    bool value = read_potent(1);
     bool savePermit = 1;
     printValue(value,5,1);
     while(true){
@@ -250,7 +287,7 @@ void saveSet(byte memoryCell){
    Serial.println("save Set bool final"); 
    #endif
 }
-//версия saveSet с возвратом значения вместо записи в память
+// version of saveSet with return value instead of writing to memory
 byte saveSetReturn(byte lowerLimit,byte upperLimit){
     byte value = 61;//value = -1;???
     bool savePermit = 1;
@@ -290,7 +327,7 @@ void dateSaveSet(){
     if(setButton.isSingle())break;
     if(backButtonCheck()==1){savePermit =0;return;}
   }
-  byte maxDay = daysInMonth(MonthValue, YearsValue);//определяем кол-во дней в данном месяце
+  byte maxDay = daysInMonth(MonthValue, YearsValue);//determine the number of days in this month
   lcd.setCursor(6,1); lcd.print("^^    ");
   while(savePermit){
     if(DaysValue != read_potent(1,maxDay)){
@@ -326,12 +363,82 @@ byte daysInMonth(byte currentMonth, byte currentYear){
       break;
   }
 }
+void saveMotorPosition(Motor &currMotor, boolean actionType, int value){ 
+    if(actionType == OPEN){
+        currMotor.openPosition = value;
+        EEPROM.put((currMotor.motorNumber * 10) + 202, value);
+    }else{
+        currMotor.closePosition = value;
+        EEPROM.put((currMotor.motorNumber * 10) + 204, value);
+    }
+}
+void setMotorPosition(long userPath, boolean actionType){
+  bool savePermit = 1;
+
+  int positionResult = -1;
+  int zoneOrTankNumber = -1;
+
+  if(userPath/1000 == 0){  zoneOrTankNumber = 0;
+  }else{zoneOrTankNumber = (userPath/10)%10;}
+
+  
+  if(zoneOrTankNumber == -1){
+  lcd.clear();
+  lcd.print("user path error");
+    while(savePermit){
+      if(backButtonCheck()==1){savePermit =0;return;}
+    }
+  }
+
+  
+  Serial.print("setMotorPosition == ");
+  Serial.println(userPath);
+
+  lcd.clear();
+  lcd.print("curr point save?");
+  lcd.setCursor(6,1); 
+  lcd.print("loading");
+  switch(zoneOrTankNumber){
+    case 0: positionResult = checkPositionOfMotor(tankMotor); break;
+    case 1: positionResult = checkPositionOfMotor(zone1.motor); break;
+    case 2: positionResult = checkPositionOfMotor(zone2.motor); break;
+    case 3: positionResult = checkPositionOfMotor(zone3.motor); break;
+  } 
+  lcd.setCursor(6,1); 
+  if(positionResult == -1){
+    lcd.print("disabled");
+  }else{
+    lcd.print("       ");
+    lcd.setCursor(6,1); 
+    lcd.print(positionResult);
+  }
+  delay(50);
+  while(savePermit){
+    if(setButton.isSingle())break; 
+    if(backButtonCheck()==1){savePermit =0;return;}
+  }
+  if(savePermit == 1){  
+    switch(zoneOrTankNumber){
+      case 0: saveMotorPosition(tankMotor, actionType, positionResult); break;
+      case 1: saveMotorPosition(zone1.motor, actionType, positionResult); break;
+      case 2: saveMotorPosition(zone2.motor, actionType, positionResult); break;
+      case 3: saveMotorPosition(zone3.motor, actionType, positionResult); break;
+    } 
+    lcd.setCursor(6,1);lcd.print("      ");
+    lcd.setCursor(0,0);lcd.print("saved           ");
+    while(true){
+      if(backButtonCheck()==1){break;}
+    }
+  }
+}
+
 void timeSaveSet(){
   bool savePermit = 1;
   byte minutesValue, hoursValue = 0;
   lcd.clear();
   lcd.print("time:   .??");
-  lcd.setCursor(6,1); lcd.print("^^");
+  lcd.setCursor(6,1);
+  lcd.print("^^");
   while(savePermit){
     if(hoursValue != read_potent(0,23)){
         hoursValue = read_potent(0,23);
@@ -348,7 +455,7 @@ void timeSaveSet(){
     if(backButtonCheck()==1){savePermit =0;return;}
   }
   if(savePermit == 1){   
-    lcd.setCursor(9,1);lcd.print("  ");
+    lcd.setCursor(6,1);lcd.print("  ");
     lcd.setCursor(0,0);lcd.print("saved");
     t.Hour = hoursValue;
     t.Minute = minutesValue;
@@ -400,7 +507,7 @@ void tankCustomTimeSet(){
     if(setButton.isSingle())break;
     if(backButtonCheck()==1){savePermit =0;return;}
   }
-  //сохранение
+
   if(savePermit == 1){   
     lcd.setCursor(9,1);lcd.print("  ");
     lcd.setCursor(0,0);lcd.print("saved");
@@ -416,7 +523,7 @@ void tankCustomTimeSet(){
   Serial.println("1 step f");   
   #endif            
 }
-//saveSet для zone
+//saveSet for zone
 void saveSetZone(long userPath,byte lowerLimit,byte upperLimit){
     byte value = 0;
     byte parameter = (int((userPath)/1000))%10;
@@ -427,58 +534,45 @@ void saveSetZone(long userPath,byte lowerLimit,byte upperLimit){
             case 1:  //duration
                 if(upperLimit==59){EEPROM.update(zoneNum*10 + 2,value);
                 }else{             EEPROM.update(zoneNum*10 + 1,value);}
-               /* switch(zoneNum){
-                    //в каждом кейсе записываем в память значение saveSetReturn(interval, memoryCell); memoryCell уникальная для каждого кейса
-                case 1: if(upperLimit==59 ){
-                              EEPROM.update(zone1DurationMinutesMemory,value);
-                        }else{EEPROM.update(zone1DurationHoursMemory,value);} break; //сохранение в энергонезависимую память
-                case 2: if(upperLimit==59){
-                              EEPROM.update(zone2DurationMinutesMemory,value);
-                        }else{EEPROM.update(zone2DurationHoursMemory,value);} break; //сохранение в энергонезависимую память
-                case 3: if(upperLimit==59){
-                              EEPROM.update(zone3DurationMinutesMemory,value);
-                        }else{EEPROM.update(zone3DurationHoursMemory,value);} break;//сохранение в энергонезависимую память
-                }*/
             break;
             case 2://start time
                 if(upperLimit==59){EEPROM.update(zoneNum*10 + 4,value);
                 }else{             EEPROM.update(zoneNum*10 + 3,value);}
-                
-                /*switch(zoneNum){
-                case 1: if(upperLimit==59){
-                              EEPROM.update(zone1StartMinutesMemory,value);
-                        }else{EEPROM.update(zone1StartHoursMemory,value);} break; //сохранение в энергонезависимую память
-                case 2: if(upperLimit==59){
-                              EEPROM.update(zone2StartMinutesMemory,value);
-                        }else{EEPROM.update(zone2StartHoursMemory,value);} break; //сохранение в энергонезависимую память
-                case 3: if(upperLimit==59){
-                              EEPROM.update(zone3StartMinutesMemory,value);
-                        }else{EEPROM.update(zone3StartHoursMemory,value);} break;//сохранение в энергонезависимую память
-                }*/
             break;
             case 3://pause of days
                 EEPROM.update(zoneNum*10,value);
-                
-                /*switch(zoneNum){
-                case 1: EEPROM.update(zone1PauseOfDaysMemory,value); break; //сохранение в энергонезависимую память
-                case 2: EEPROM.update(zone2PauseOfDaysMemory,value); break; //сохранение в энергонезависимую память
-                case 3: EEPROM.update(zone3PauseOfDaysMemory,value); break; //сохранение в энергонезависимую память
-                }*/
         }
         while(true){
-            if(backButtonCheck()==1)break; // если нажать тумблер, то будет https://demotivation.ru/wp-content/uploads/2020/03/1066111.gif
+            if(backButtonCheck()==1)break; 
       
         }
     }
 }
-//булевый saveSet для zone
+// boolean saveSet for zone
 void saveBoolSetZone(long userPath){
-    saveSet((((userPath)/10)%10) * 10 + 5);
-    /*switch(((userPath)/10)%10){
-    case 1: saveSet(zone1IsTurnedOnMemory); break;//сохранение в энергонезависимую память
-    case 2: saveSet(zone2IsTurnedOnMemory); break;//сохранение в энергонезависимую память
-    case 3: saveSet(zone3IsTurnedOnMemory); break;//сохранение в энергонезависимую память
-      }*/
+   boolean value = false;
+    if(userPath == 132){
+      value = boolsaveSetReturn();  // saving the tap type for the tank (on/off potentiometer)
+      if(value != -1){
+        EEPROM.update(0 * 10 + 201,value);
+        tankMotor.connectedPotent = value;
+      }
+    }
+
+    if((userPath%1000)/100 == 1){
+      saveSet((((userPath)/10)%10) * 10 + 5); // saving the mode of irrigation zones (on off)
+    }
+    if((userPath%1000)/100 == 4){
+      value = boolsaveSetReturn();   // save tap type (on/off potentiometer)
+      if(value != -1){
+        EEPROM.update((((userPath)/10)%10) * 10 + 201, value);
+        switch((((userPath)/10)%10)){
+            case 1: zone1.motor.connectedPotent = value; break;
+            case 2: zone2.motor.connectedPotent = value; break;
+            case 3: zone3.motor.connectedPotent = value; break;
+        }
+      }
+    }
 }
 
 void handControlOfMotor(int userPath){
@@ -561,7 +655,7 @@ void warningHandControl(boolean type){
         if(backButtonCheck()==1){break;}
     }
 }
-void handControlOpen(int currentZone){
+void handControlOpen(int currentZone){   
     lcd.clear();
     lcd.print("    opens");
     delay(5);
@@ -594,17 +688,17 @@ void handControlClose(int currentZone){
     }
 }
 void calibrationMotor(int userPath){
-  #ifdef DEBUGPRINTS 
-  Serial.println("calibrationMotor"); 
-  #endif
+    #ifdef DEBUGPRINTS 
+        Serial.println("calibrationMotor"); 
+    #endif
     byte currentModeCalibrationMotor = 0;
     byte currentZoneOrTank = 0;
     byte lastStatus = 99;
     int stepCoefficient = 0;
 
-    
+
     currentZoneOrTank = (userPath%100)/10;
-    if(userPath == 32)currentZoneOrTank = 0; // если путь 32, то мы калибруем бак. бак - 0; зона_1 - 1; зона_2 - 2...
+    if(userPath == 32)currentZoneOrTank = 0; // if path is 32, then we calibrate the tank. tank - 0; zone_1 - 1; zone_2 - 2...
     lcd.setCursor(0,0); lcd.print("  +5   +10   +25");
     lcd.setCursor(0,1); lcd.print("  -5   -10   -25");
         
@@ -622,8 +716,7 @@ void calibrationMotor(int userPath){
         if(setButton.isSingle()){            
             if(currentZoneOrTank  == 0){ 
                 if(isInFillingTankProcess == true){ warningCalibrationMotor(); return;}
-                Motor tankMotor1(motor0_pin1, motor0_pin3, motor0_pin2, motor0_pin4);
-                moveTap(tankMotor1, stepCoefficient*364); // 364 шага двигателя для 1 градуса поворота крана
+                moveTap(tankMotor, stepCoefficient*364); // 364 motor steps for 1 degree of crane rotation
             }
             if(currentZoneOrTank  == 1){
                     if(zone1.isInWateringProcess){warningCalibrationMotor(); return;}
@@ -677,12 +770,12 @@ void systemStatusShow(){
         lcd.setCursor(5,0);
         
         switch(currentInfo){
-             case 1:  lcd.print("T ="); printValue(t.Hour,9,0);                                 //point 1 -- current time
+             case 1:  lcd.print("T ="); printValue(t.Hour,9,0);                                                                    //point 1 -- current time
                       lcd.setCursor(11,0); lcd.print(":");
                       printValue(t.Minute,12,0); break;
-             case 2:  lcd.print("millis ="); lcd.setCursor(0,1); lcd.print(millis()); break;    //point 2 -- millis
-             case 3:  lcd.print("tankE = ");lcd.setCursor(13,0); lcd.print("?");  break;             // is tank empty
-             case 4:  lcd.print("tankF = "); lcd.setCursor(13,0); lcd.print("?");  break;              // is tank full
+             case 2:  lcd.print("millis ="); lcd.setCursor(0,1); lcd.print(millis()); break;                                       //point 2 -- millis
+             case 3:  lcd.print(" ---- = ");lcd.setCursor(13,0); lcd.print("?");  break;                                           //point 3 -- no info
+             case 4:  lcd.print("tankS = "); lcd.setCursor(13,0); lcd.print(tank_status);  break;                                  // tank status
              
              case 5:  lcd.print("z11>"); lcd.setCursor(9,0);lcd.print(zone1.isInWateringProcess); break;                           // zone1 isInWateringProcess
              case 6:  lcd.print("z12>"); lcd.setCursor(9,0);lcd.print(zone1.timeToWateringStart(t.Hour*60 + t.Minute)); break;     // zone1 timeToWateringStart
@@ -711,8 +804,8 @@ void systemStatusShow(){
              case 27: lcd.print("z37>"); lcd.setCursor(9,0);lcd.print(zone3.pauseOfDays); break;                                   // zone3 pauseOfDays
              case 28: lcd.print("z38>"); lcd.setCursor(9,0);lcd.print(zone3.isTurnedOn); break;                                    // zone3 isTurnedOn
              
-             case 29: lcd.print("dTr>"); printValue((byte)days_to_reload,9,0); break;                                      // days_to_reload
-             case 30: lcd.print("mDays>"); printValue((byte)millis_days,9,0); break;                                       // millis_days
+             case 29: lcd.print("dTr>"); printValue((byte)days_to_reload,9,0); break;                                              // days_to_reload
+             case 30: lcd.print("mDays>"); printValue((byte)millis_days,9,0); break;                                               // millis_days
              /*when adding new items, increase the reading values from the potentiometer*/ 
         }
         if(backButtonCheck()==1){break;}

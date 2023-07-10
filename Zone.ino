@@ -1,8 +1,8 @@
-//Реализация методов класса Zone:
-Zone::Zone(byte ZoneNumber, Motor motor_c){
+//Implementation of Zone class methods:
+Zone::Zone(byte ZoneNumber, Motor& motor_c) : motor(motor_c) { 
     zoneNumber = ZoneNumber;
     updateSettings();
-    motor = motor_c;
+   // motor = motor_c;
 }
 bool Zone::isDayChanged(){
   timeTempCheck();
@@ -11,7 +11,7 @@ bool Zone::isDayChanged(){
   return true;
 }
 bool Zone::isStartWateringTime(int currentTime){
-  if(!isTurnedOn){return false;}//если зона выключена, возвращаем значения, которые не влияют на работу программы
+  if(!isTurnedOn){return false;}//if the zone is disabled, return values that do not affect the program
   if(isDayChanged() && daysToWatering != 0) { daysToWatering--;}
   if(isInWateringProcess){return false;}
   if((timeToWateringStart(currentTime)<TIME_BACKLASH)&&(daysToWatering==0)){ return true;}
@@ -22,7 +22,7 @@ bool Zone::isEndWateringTime(int currentTime){
   return false;
 }
 int Zone::timeToWateringStart(int currentTime){
-  if(!isTurnedOn) return 1430;//если зона выключена, возвращаем значения, которые не влияют на работу программы
+  if(!isTurnedOn) return 1430;//if the zone is disabled, return values that do not affect the program
   int timeDifference = startTime - currentTime;
   if(timeDifference<0) timeDifference+=MINUTES_IN_DAY;
   return timeDifference;

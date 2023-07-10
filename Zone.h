@@ -16,7 +16,7 @@ class Zone{
   
     byte zoneNumber = 0;
     
-    bool isInWateringProcess = false;//поливается ли эта зона сейчас
+    bool isInWateringProcess = false;
     byte pauseOfDays;
     byte currentWeekDay = 200;
     byte daysToWatering = 1;
@@ -25,9 +25,9 @@ class Zone{
     int startTime;
     int endTime;
     bool isTurnedOn;
-    Motor motor;
+    Motor& motor;
     //
-    Zone(byte, Motor);
+    Zone(byte, Motor&);
     bool isDayChanged();
     bool isStartWateringTime(int currentTime);
     bool isEndWateringTime(int currentTime);

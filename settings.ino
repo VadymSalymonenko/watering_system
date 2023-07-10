@@ -1,6 +1,6 @@
 #include "set_help_functions.h"
 void settings(){
-    delay(100); // для устранения дребезга контактов..
+    delay(100); // to eliminate contact bounce..
     lcd.begin();
     lcd.clear();  
     while(true){
